@@ -8,21 +8,30 @@ import mongo.Connection
 import org.bson.types.ObjectId
 import java.util.*
 
-val collection = Connection.connectWord("words")
+val wordCollection = Connection.connect<Word>("words")
 
-fun getWordsById(id: String?): ArrayList<Word> =
-    collection.find(Filters.eq("_id", ObjectId(id))).into(ArrayList())
+fun getWordById(id: ObjectId?): Word? {
+    val word = wordCollection.find(Filters.eq("_id", id)).first()
+    val supplier = word.supplierId?.toObjectId()?.let { getSupplierById(it) }
+    word.supplier = supplier
+    return word
+}
+
 
 fun getWordsByEnglish(word: String) =
-    collection.find(Filters.eq("en", word.lowercase(Locale.getDefault()).trim())).into(ArrayList())
+    wordCollection.find(Filters.eq("en", word.lowercase(Locale.getDefault()).trim())).into(ArrayList())
 
 fun getWordsByRussian(word: String) =
-    collection.find(Filters.eq("ru", word.lowercase(Locale.getDefault()).trim())).into(ArrayList())
+    wordCollection.find(Filters.eq("ru", word.lowercase(Locale.getDefault()).trim())).into(ArrayList())
 
-fun getRandomWord(): AggregateIterable<Word> = collection.aggregate(listOf(Aggregates.sample(4)))
+fun getRandomWord(): AggregateIterable<Word> = wordCollection.aggregate(listOf(Aggregates.sample(4)))
 
-fun deleteWordById(id: String?): Long = collection.deleteOne(Filters.eq("id", id)).deletedCount
+fun deleteWordById(id: String): Long = wordCollection.deleteOne(Filters.eq("_id", ObjectId(id))).deletedCount
 
-fun getAllWords(): ArrayList<Word> = collection.find().into(ArrayList())
+fun getAllWords(): ArrayList<Word> = wordCollection.find().into(ArrayList())
 
-fun saveWord(word: Word) = collection.insertOne(word)
+fun saveWord(word: Word) = wordCollection.insertOne(word).insertedId?.asObjectId()?.value.let {
+    getWordById(it)
+}
+
+fun updateWord(word: Word) = wordCollection.replaceOne(Filters.eq("_id", word.id), word).matchedCount

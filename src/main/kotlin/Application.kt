@@ -4,6 +4,7 @@ import io.ktor.request.*
 import io.ktor.serialization.*
 import io.ktor.server.netty.*
 import org.slf4j.event.Level
+import route.registerSupplierRoute
 import route.registerWordRoutes
 import java.io.InputStream
 import java.util.*
@@ -13,7 +14,6 @@ class Main
 fun main(args: Array<String>) {
     val telegramToken = getProperty("telegram.access.token")
     val telegramUsername = getProperty("telegram.bot.username")
-    println(telegramToken, telegramUsername)
     EngineMain.main(args)
 }
 
@@ -23,6 +23,7 @@ fun Application.module() {
     }
 
     registerWordRoutes()
+    registerSupplierRoute()
 
     install(CallLogging) {
         level = Level.INFO
